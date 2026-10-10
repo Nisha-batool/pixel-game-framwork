@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090d18">
+  <meta name="description" content="Play Star Catcher, a free mini-game by Nisha Batool. Catch stars and dodge bombs.">
+  <title>Star Catcher | Nisha's 2D Game Engine</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #090d18;
+      color: #f3f6ff;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      --muted: #96a2bd;
+      --cyan: #62d7ff;
+      --line: rgba(169, 190, 255, .14);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      padding: 32px 18px;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(70, 92, 180, .2), transparent 53%),
+        radial-gradient(ellipse at 5% 75%, rgba(29, 148, 175, .09), transparent 36%),
+        #090d18;
+    }
+
+    main { width: min(100%, 780px); margin: 0 auto; }
+
+    .topline {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      color: var(--muted);
+      font-size: .78rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .brand { color: var(--cyan); font-weight: 750; }
+    h1 { margin: 0; font-size: clamp(2.2rem, 8vw, 4rem); letter-spacing: -.055em; }
+    .intro { margin: 8px 0 24px; color: var(--muted); line-height: 1.6; }
+
+    .game {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgba(17, 23, 39, .9);
+      box-shadow: 0 24px 90px rgba(0, 0, 0, .4), 0 0 55px rgba(59, 113, 204, .08);
+    }
+
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .stat-label {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--muted);
+      font-size: .66rem;
+      font-weight: 700;
+      letter-spacing: .13em;
+    }
+
+    .stat-value { font-size: 1.22rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    #score { color: #ffe477; }
+    #lives { color: #ff728c; letter-spacing: .11em; }
+
+    .restart {
+      min-height: 40px;
+      padding: 0 14px;
+      border: 1px solid rgba(98, 215, 255, .35);
+      border-radius: 10px;
+      background: rgba(98, 215, 255, .08);
+      color: #9de8ff;
+      font: inherit;
+      font-size: .83rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+    .restart:hover { background: rgba(98, 215, 255, .16); }
+
+    .screen {
+      padding: 12px;
+      background:
+        radial-gradient(ellipse at 50% 100%, rgba(21, 80, 120, .14), transparent 55%),
+        #0c1221;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 11px;
+      background: #0c1221;
+      image-rendering: pixelated;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 0 12px 14px;
+    }
+
+    .move {
+      min-height: 48px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #171f32;
+      color: #e8eeff;
+      font: inherit;
+      font-size: 1.1rem;
+      font-weight: 800;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .move:active, .move.pressed { border-color: var(--cyan); background: #1b3850; }
+
+    .help {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 20px 18px;
+      color: var(--muted);
+      font-size: .8rem;
+      line-height: 1.5;
+    }
+
+    kbd {
+      padding: 2px 6px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      color: #dce5ff;
+      font: inherit;
+      font-size: .73rem;
+    }
+
+    footer { padding-top: 19px; color: #74809a; font-size: .78rem; text-align: center; }
+
+    @media (min-width: 650px) {
+      .controls { display: none; }
+    }
+
+    @media (max-width: 480px) {
+      body { padding: 22px 12px; }
+      .topline { font-size: .66rem; }
+      .hud { padding: 13px 14px; }
+      .screen { padding: 8px; }
+      .help { padding: 0 14px 14px; font-size: .72rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="topline">
+      <span class="brand">Nisha's 2D Game Engine</span>
+      <span>Free browser game</span>
+    </div>
+    <h1>Star Catcher</h1>
+    <p class="intro">Catch the golden stars. Dodge the red bombs. How high can you score?</p>
+
+    <section class="game" aria-label="Star Catcher game">
+      <div class="hud">
+        <div>
+          <span class="stat-label">SCORE</span>
+          <span id="score" class="stat-value" aria-live="polite">0</span>
+        </div>
+        <div>
+          <span class="stat-label">LIVES</span>
+          <span id="lives" class="stat-value" aria-label="3 lives">♥ ♥ ♥</span>
+        </div>
+        <button id="restart" class="restart" type="button">Restart game</button>
+      </div>
+      <div class="screen">
+        <canvas id="game" width="768" height="720" aria-label="Game screen: catch stars and avoid bombs"></canvas>
+      </div>
+      <div class="controls" aria-label="Touch controls">
+        <button class="move" type="button" data-direction="left" aria-label="Move left">←</button>
+        <button class="move" type="button" data-direction="right" aria-label="Move right">→</button>
+      </div>
+      <div class="help">
+        <span>Move: <kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd></span>
+        <span>Catch ⭐ &nbsp; Avoid 💣</span>
+      </div>
+    </section>
+    <footer>Made by Nisha Batool · <a href="https://github.com/Nisha-batool/pixel-game-framwork" style="color:#96a2bd">View project on GitHub</a></footer>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d");
+      const scoreLabel = document.getElementById("score");
+      const livesLabel = document.getElementById("lives");
+      const restartButton = document.getElementById("restart");
+      const playerY = 655;
+      const heldKeys = new Set();
+      const heldTouch = new Set();
+      const stars = Array.from({ length: 68 }, (_, index) => ({
+        x: (index * 137 + 31) % 768,
+        y: (index * 211 + 19) % 720,
+        size: index % 7 === 0 ? 2 : 1,
+        alpha: .17 + (index % 5) * .09
+      }));
+      let playerX;
+      let score;
+      let lives;
+      let objects;
+      let spawnTimer;
+      let lastFrame;
+      let gameOver;
+      let animationId = 0;
+
+      function reset() {
+        if (animationId !== 0) cancelAnimationFrame(animationId);
+        playerX = canvas.width / 2;
+        score = 0;
+        lives = 3;
+        objects = [];
+        spawnTimer = 0;
+        lastFrame = 0;
+        gameOver = false;
+        scoreLabel.textContent = "0";
+        livesLabel.textContent = "♥ ♥ ♥";
+        livesLabel.setAttribute("aria-label", "3 lives");
+        animationId = requestAnimationFrame(frame);
+      }
+
+      function spawnObject() {
+        const safeWidth = canvas.width - 48;
+        objects.push({
+          x: 24 + Math.random() * safeWidth,
+          y: -18,
+          speed: 165 + Math.random() * 105 + Math.min(score * 4.5, 210),
+          bomb: Math.random() < .25
+        });
+      }
+
+      function update(dt) {
+        const left = heldKeys.has("ArrowLeft") || heldKeys.has("a") || heldKeys.has("A") || heldTouch.has("left");
+        const right = heldKeys.has("ArrowRight") || heldKeys.has("d") || heldKeys.has("D") || heldTouch.has("right");
+        if (left !== right) playerX += (right ? 1 : -1) * 360 * dt;
+        playerX = Math.max(48, Math.min(canvas.width - 48, playerX));
+
+        spawnTimer += dt;
+        if (spawnTimer >= Math.max(.34, .88 - score * .012)) {
+          spawnObject();
+          spawnTimer = 0;
+        }
+
+        for (const object of objects) {
+          object.y += object.speed * dt;
+          const overlapX = Math.abs(object.x - playerX) < 47;
+          const overlapY = object.y + 15 >= playerY && object.y - 15 <= playerY + 20;
+          if (overlapX && overlapY) {
+            if (object.bomb) {
+              lives--;
+              livesLabel.textContent = "♥ ".repeat(lives).trim() || "—";
+              livesLabel.setAttribute("aria-label", `${lives} ${lives === 1 ? "life" : "lives"}`);
+            } else {
+              score++;
+              scoreLabel.textContent = String(score);
+            }
+            object.y = canvas.height + 30;
+          }
+        }
+
+        objects = objects.filter(object => object.y < canvas.height + 24);
+        if (lives <= 0) gameOver = true;
+      }
+
+      function drawStar(x, y) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.fillStyle = "#ffe477";
+        ctx.strokeStyle = "#fff3b4";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let point = 0; point < 10; point++) {
+          const radius = point % 2 === 0 ? 12 : 5;
+          const angle = point * Math.PI / 5 - Math.PI / 2;
+          const px = Math.cos(angle) * radius;
+          const py = Math.sin(angle) * radius;
+          if (point === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function draw() {
+        ctx.fillStyle = "#0c1221";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        for (const star of stars) {
+          ctx.globalAlpha = star.alpha;
+          ctx.fillStyle = "#d8e6ff";
+          ctx.fillRect(star.x, star.y, star.size, star.size);
+        }
+        ctx.globalAlpha = 1;
+
+        ctx.fillStyle = "#f0f4ff";
+        ctx.font = "bold 22px 'Segoe UI', Arial, sans-serif";
+        ctx.fillText("STAR CATCHER", 28, 42);
+
+        for (const object of objects) {
+          if (object.bomb) {
+            ctx.fillStyle = "rgba(255, 65, 97, .18)";
+            ctx.beginPath();
+            ctx.arc(object.x, object.y, 23, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#fa4967";
+            ctx.beginPath();
+            ctx.arc(object.x, object.y + 2, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "#ffaf85";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(object.x + 5, object.y - 8);
+            ctx.lineTo(object.x + 11, object.y - 15);
+            ctx.stroke();
+          } else {
+            ctx.fillStyle = "rgba(255, 228, 119, .13)";
+            ctx.beginPath();
+            ctx.arc(object.x, object.y, 23, 0, Math.PI * 2);
+            ctx.fill();
+            drawStar(object.x, object.y);
+          }
+        }
+
+        ctx.fillStyle = "rgba(98, 215, 255, .12)";
+        ctx.fillRect(playerX - 51, playerY - 7, 102, 42);
+        ctx.fillStyle = "#62d7ff";
+        ctx.fillRect(playerX - 45, playerY, 90, 22);
+        ctx.fillStyle = "#b3efff";
+        ctx.fillRect(playerX - 34, playerY - 9, 68, 9);
+        ctx.fillStyle = "#249bc5";
+        ctx.fillRect(playerX - 33, playerY + 22, 66, 5);
+        ctx.fillStyle = "#eafaff";
+        ctx.fillRect(playerX - 3, playerY - 7, 6, 5);
+      }
+
+      function drawGameOver() {
+        ctx.fillStyle = "rgba(6, 9, 18, .78)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#ff728c";
+        ctx.font = "800 56px 'Segoe UI', Arial, sans-serif";
+        ctx.fillText("GAME OVER", canvas.width / 2, 310);
+        ctx.fillStyle = "#ffe477";
+        ctx.font = "700 30px 'Segoe UI', Arial, sans-serif";
+        ctx.fillText(`FINAL SCORE  ${score}`, canvas.width / 2, 366);
+        ctx.fillStyle = "#e9efff";
+        ctx.font = "20px 'Segoe UI', Arial, sans-serif";
+        ctx.fillText("Press Enter or tap Restart game", canvas.width / 2, 420);
+        ctx.textAlign = "start";
+      }
+
+      function frame(timestamp) {
+        animationId = 0;
+        if (gameOver) return;
+        const dt = lastFrame === 0 ? 0 : Math.min((timestamp - lastFrame) / 1000, .05);
+        lastFrame = timestamp;
+        update(dt);
+        draw();
+        if (gameOver) drawGameOver();
+        else animationId = requestAnimationFrame(frame);
+      }
+
+      window.addEventListener("keydown", event => {
+        if (["ArrowLeft", "ArrowRight", "a", "A", "d", "D"].includes(event.key)) {
+          heldKeys.add(event.key);
+          event.preventDefault();
+        } else if (event.key === "Enter" && gameOver) {
+          reset();
+        }
+      });
+
+      window.addEventListener("keyup", event => heldKeys.delete(event.key));
+      window.addEventListener("blur", () => {
+        heldKeys.clear();
+        heldTouch.clear();
+        document.querySelectorAll(".move").forEach(button => button.classList.remove("pressed"));
+      });
+
+      document.querySelectorAll(".move").forEach(button => {
+        const direction = button.dataset.direction;
+        button.addEventListener("pointerdown", event => {
+          event.preventDefault();
+          heldTouch.add(direction);
+          button.classList.add("pressed");
+          button.setPointerCapture(event.pointerId);
+        });
+        const release = () => {
+          heldTouch.delete(direction);
+          button.classList.remove("pressed");
+        };
+        button.addEventListener("pointerup", release);
+        button.addEventListener("pointercancel", release);
+        button.addEventListener("lostpointercapture", release);
+      });
+
+      restartButton.addEventListener("click", reset);
+      reset();
+    })();
+  </script>
+</body>
+</html>
